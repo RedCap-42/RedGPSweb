@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis'
 import { NextResponse } from 'next/server';
 
 const LOCATION_KEY = 'latest_gps_location';
@@ -17,9 +17,13 @@ export async function POST(request: Request) {
 
         const locationData = { lat, lng, timestamp: timestamp || Date.now(), accuracy };
 
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
             // Store in KV
-            await kv.set(LOCATION_KEY, locationData);
+            const redis = new Redis({
+                url: process.env.UPSTASH_REDIS_REST_URL,
+                token: process.env.UPSTASH_REDIS_REST_TOKEN,
+            })
+            await redis.set(LOCATION_KEY, locationData);
         } else {
             // Local fallback
             localLocationData = locationData;
@@ -37,8 +41,12 @@ export async function GET() {
     try {
         let locationData;
 
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            locationData = await kv.get(LOCATION_KEY);
+        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+            const redis = new Redis({
+                url: process.env.UPSTASH_REDIS_REST_URL,
+                token: process.env.UPSTASH_REDIS_REST_TOKEN,
+            })
+            locationData = await redis.get(LOCATION_KEY);
         } else {
             locationData = localLocationData;
         }
